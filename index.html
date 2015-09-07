@@ -1,0 +1,198 @@
+<!doctype html>
+<html lang="en">
+
+	<head>
+		<meta charset="utf-8">
+
+		<title>Optimizing Set Abstract Domains</title>
+
+		<meta name="author" content="Arlen Cox">
+
+		<meta name="apple-mobile-web-app-capable" content="yes" />
+		<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+
+		<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, minimal-ui">
+
+		<link rel="stylesheet" href="css/reveal.css">
+		<link rel="stylesheet" href="css/theme/solarized.css" id="theme">
+
+		<!-- Code syntax highlighting -->
+		<link rel="stylesheet" href="lib/css/solarized_light.css">
+
+		<!-- Printing and PDF exports -->
+		<script>
+			var link = document.createElement( 'link' );
+			link.rel = 'stylesheet';
+			link.type = 'text/css';
+			link.href = window.location.search.match( /print-pdf/gi ) ? 'css/print/pdf.css' : 'css/print/paper.css';
+			document.getElementsByTagName( 'head' )[0].appendChild( link );
+		</script>
+
+		<!--[if lt IE 9]>
+		<script src="lib/js/html5shiv.js"></script>
+		<![endif]-->
+	</head>
+
+	<body>
+
+		<div class="reveal">
+
+			<!-- Any section element inside of this container is displayed as a slide -->
+			<div class="slides">
+				<section>
+					<h1>Optimizing Set Abstract Domains</h1>
+					<h3>Arlen Cox (IDA/CCS)</h3>
+				</section>
+
+        <section>
+          <h2>TL;DR</h2>
+
+          <p class="fragment">I made a library.</p>
+          <p class="fragment">It's fast.</p>
+          <p class="fragment">It's well documented.</p>
+          <p class="fragment">It's easy to use.</p>
+          <span class="fragment">
+          <p>It uses abstract interpretation to <i>efficiently</i> infer inductive invariants like this:</p>
+          \(
+            S = R \uplus \{x\} \uplus T \quad \wedge \quad Q = P \setminus T
+          \)
+          </span>
+          <p class="fragment"><a href="https://github.com/arlencox/SETr">https://github.com/arlencox/SETr</a></p>
+        </section>
+
+        <section>
+          <h2>JavaScript objects are open</h2>
+          <span style="font-size: 42pt">
+          <pre class="fragment"><code data-trim>
+var point = { x: 1, y: 2 };
+          </code></pre><pre class="fragment"><code data-trim>
+point.x;           // read x field
+        </code></pre><pre class="fragment"><code data-trim>
+point.y;           // read y field
+      </code></pre><pre class="fragment"><code data-trim>
+point.z = 3;       // add z field
+    </code></pre><pre class="fragment"><code data-trim>
+point[“w”] = 4;    // add w field
+  </code></pre><pre class="fragment"><code data-trim class="js">
+“z” in point;      // ask if z exists
+</code></pre><pre class="fragment"><code data-trim>
+for(i in point) {} // iterate over fields
+// i = [“w”, “y”, “x”, “z”]
+        </code></pre>
+          </span>
+        </section>
+
+				<section>
+					<h2>Objects overwrite other objects</h2>
+          <table>
+            <tr>
+              <td width="400">
+                <span style="font-size: 42pt">
+                  <div style="visibility: hidden">Hello</div>
+                  <div style="visibility: hidden">Hello</div>
+                  <div style="visibility: hidden">Hello</div>
+                  <pre><code data-trim>
+for(x in src) {
+  dst[x] = src[x];
+}
+                  </code></pre>
+                </span>
+                <p class="fragment" data-fragment-index="2">Without knowing what src and dst are, what does this code do?</p>
+                <p class="fragment" data-fragment-index="3"><b>Infer loop invariants</b></p>
+              </td>
+              <td>
+                <table cellpadding="0" cellspacing="0">
+                  <tr><td>
+                      src
+                    </td><td>
+                      dst
+                    </td></tr>
+                  <tr><td style="background-color: lightblue">
+                      $x \mapsto 1$
+                    </td><td style="background-color: lightgreen">
+                      $x \mapsto 6$
+                    </td></tr>
+                  <tr><td style="background-color: lightblue">
+                      $y \mapsto 2$
+                    </td><td style="background-color: lightgreen">
+                      $p \mapsto 7$
+                    </td></tr>
+                  <tr><td style="background-color: lightblue">
+                      $z \mapsto 3$
+                    </td></tr>
+                </table>
+
+                <table cellpadding="0" cellspacing="0" class="fragment" data-fragment-index="0">
+                  <tr><td>
+                      src
+                    </td><td>
+                      dst
+                    </td></tr>
+                    <tr><td style="background-color: lightblue">
+                        $x \mapsto 1$
+                      </td><td style="background-color: lightblue">
+                        $x \mapsto 1$
+                      </td>
+                    </tr>
+                    <tr><td style="background-color: lightblue">
+                        $y \mapsto 2$
+                      </td><td style="background-color: lightgreen">
+                        $p \mapsto 7$
+                      </td>
+                    </tr>
+                    <tr><td style="background-color: lightblue">
+                        $z \mapsto 3$
+                      </td><td style="background-color: lightblue">
+                        $y \mapsto 2$
+                      </td>
+                    </tr>
+                    <tr><td>
+                      </td><td style="background-color: lightblue">
+                        $z \mapsto 3$
+                      </td>
+                    </tr>
+                </table>
+
+              </td>
+            </tr>
+          </table>
+				</section>
+			</div>
+
+		</div>
+
+		<script src="lib/js/head.min.js"></script>
+		<script src="js/reveal.js"></script>
+
+		<script>
+
+			// Full list of configuration options available at:
+			// https://github.com/hakimel/reveal.js#configuration
+			Reveal.initialize({
+        width: 1024,
+        height: 768,
+        margin: 0,
+
+				controls: false,
+				progress: true,
+				history: true,
+				center: true,
+
+				transition: 'none', // none/fade/slide/convex/concave/zoom
+
+				// Optional reveal.js plugins
+				dependencies: [
+					{ src: 'lib/js/classList.js', condition: function() { return !document.body.classList; } },
+					{ src: 'plugin/markdown/marked.js', condition: function() { return !!document.querySelector( '[data-markdown]' ); } },
+					{ src: 'plugin/markdown/markdown.js', condition: function() { return !!document.querySelector( '[data-markdown]' ); } },
+					{ src: 'plugin/highlight/highlight.js', async: true, condition: function() { return !!document.querySelector( 'pre code' ); }, callback: function() { hljs.initHighlightingOnLoad(); } },
+					{ src: 'plugin/zoom-js/zoom.js', async: true },
+					{ src: 'plugin/notes/notes.js', async: true },
+          { src: 'plugin/math/math.js', async: true }
+				]
+			});
+
+		</script>
+
+	</body>
+</html>
